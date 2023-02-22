@@ -83,7 +83,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 )
             shoppingcart = get_object_or_404(
                 ShoppingCart, user=user, recipe=recipe
-                )
+            )
             shoppingcart.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

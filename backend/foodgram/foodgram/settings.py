@@ -84,7 +84,7 @@ DATABASES = {
     'default': {
         'ENGINE': os.getenv(
             'DB_ENGINE', default='django.db.backends.postgresql'
-            ),
+        ),
         'NAME': os.getenv('DB_NAME', default='postgres'),
         'USER': os.getenv('POSTGRES_USER', default='postgres'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='postgres'),
@@ -113,9 +113,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-
-
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
@@ -142,7 +139,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ],
 }
 

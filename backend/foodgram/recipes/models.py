@@ -13,12 +13,12 @@ class Tag(models.Model):
         max_length=7,
         unique=True,
         verbose_name='Цвет тега'
-        )
+    )
     slug = models.SlugField(
         max_length=200,
         unique=True,
         verbose_name='Слаг'
-        )
+    )
 
     class Meta:
         verbose_name = 'Тег'
@@ -33,11 +33,11 @@ class Ingredient(models.Model):
         max_length=200,
         unique=True,
         verbose_name='Название ингредиента'
-        )
+    )
     measurement_unit = models.CharField(
         max_length=200,
         verbose_name='Единица измерения'
-        )
+    )
 
     class Meta:
         verbose_name = 'Ингредиент'
