@@ -145,13 +145,12 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     def get_ingredients(self, obj):
         recipe = obj
-        ingredients = recipe.ingredient.values(
+        return recipe.ingredient.values(
             'id',
             'name',
             'measurement_unit',
             'recipe_ingredients'
         )
-        return ingredients
 
     class Meta:
         model = Recipe
