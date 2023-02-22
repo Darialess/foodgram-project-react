@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from drf_base64.fields import Base64ImageField
+from drf_extra_fields.fields import Base64ImageField
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import serializers
