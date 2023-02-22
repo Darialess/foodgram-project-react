@@ -68,9 +68,6 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           script: |
-            sudo docker pull blondolly/foodgram:latest
-            sudo docker pull blondolly/foodgram-frontend:latest
-            cd infra/
             sudo docker-compose stop
             sudo docker-compose rm backend
             touch .env
