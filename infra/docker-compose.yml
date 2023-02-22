@@ -2,18 +2,16 @@ version: '3.7'
 services:
 
   db:
-    image: postgres:14.6-alpine
-    restart: always
+    image: postgres:12.4
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - ./.env
-
+  
   backend:
     image: blondolly/foodgram:latest
     restart: always
     volumes:
-      - data_value:/code/data/
       - static_value:/code/static/
       - media_value:/code/media/
     depends_on:
@@ -25,8 +23,6 @@ services:
     image: blondolly/foodgram-frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
-    depends_on:
-      - backend
 
   nginx:
     image: nginx:1.19.3
@@ -48,4 +44,3 @@ volumes:
   postgres_data:
   static_value:
   media_value:
-  data_value:
