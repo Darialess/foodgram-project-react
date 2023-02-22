@@ -1,21 +1,19 @@
-from recipes.models import Recipe, Tag, Ingredient
-from recipes.models import Favorite, ShoppingCart
-from .serializers import RecipeWriteSerializer, TagSerializer
-from .serializers import RecipeReadSerializer, IngredientSerializer
-from rest_framework import viewsets
+from django.db.models import Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from .pagination import LimitPageNumberPagination
-from users.permissions import IsAdmin, ReadOnly
+from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
+                            ShoppingCart, Tag)
+from rest_framework import exceptions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework import status
-from rest_framework import exceptions
-from users.serializers import ShortRecipeSerializer
-from recipes.models import IngredientRecipe
-from django.http import HttpResponse
-from django.db.models import Sum
 from rest_framework.viewsets import ReadOnlyModelViewSet
+from users.permissions import IsAdmin, ReadOnly
+from users.serializers import ShortRecipeSerializer
+
+from .pagination import LimitPageNumberPagination
+from .serializers import (IngredientSerializer, RecipeReadSerializer,
+                          RecipeWriteSerializer, TagSerializer)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):

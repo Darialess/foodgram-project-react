@@ -1,10 +1,10 @@
-from rest_framework import serializers
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from .models import User, Subscribe
-from rest_framework.fields import SerializerMethodField
-from rest_framework.exceptions import ValidationError
-from rest_framework import status
 from recipes.models import Recipe
+from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.fields import SerializerMethodField
+
+from .models import Subscribe, User
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):

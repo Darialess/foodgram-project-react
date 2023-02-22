@@ -1,11 +1,10 @@
-from rest_framework import serializers
-from recipes.models import Recipe, Tag, Ingredient, IngredientRecipe
-from recipes.models import Favorite, ShoppingCart
-from drf_base64.fields import Base64ImageField
 from django.shortcuts import get_object_or_404
-from users.serializers import CustomUserSerializer
+from drf_base64.fields import Base64ImageField
+from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
+                            ShoppingCart, Tag)
+from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from users.serializers import ShortRecipeSerializer
+from users.serializers import CustomUserSerializer, ShortRecipeSerializer
 
 
 class TagSerializer(serializers.ModelSerializer):

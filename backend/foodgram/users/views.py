@@ -1,12 +1,13 @@
+from api.pagination import LimitPageNumberPagination
+from django.shortcuts import get_object_or_404
+from djoser.views import UserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from djoser.views import UserViewSet
-from .models import User, Subscribe
+
+from .models import Subscribe, User
 from .serializers import CustomUserSerializer, SubscribeSerializer
-from api.pagination import LimitPageNumberPagination
-from django.shortcuts import get_object_or_404
 
 
 class CustomUserViewSet(UserViewSet):
