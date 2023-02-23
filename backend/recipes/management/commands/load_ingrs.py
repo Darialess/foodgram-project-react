@@ -1,25 +1,27 @@
-import json
-import os
-
-from django.core.management.base import BaseCommand
-
-from foodgram.settings import BASE_DIR
+import csv
+from django.core.management import BaseCommand
 from recipes.models import Ingredient
 
 
+PATH = "/recipes/data/"
+
+
 class Command(BaseCommand):
-    help = 'Load data from ingredients.json to DB.'
+    help = "import data from ingredients.csv"
 
-    def handle(self, *args, **options):
-        data_dir = os.path.join(BASE_DIR, 'recipes', 'data')
-        with open(
-                os.path.join(data_dir, 'ingredients.json'),
-                encoding='utf-8'
-        ) as json_file:
-            data = json.load(json_file)
+    def handle(self, *args, **kwargs):
 
-        for item in data:
-            Ingredient.objects.get_or_create(
-                name=item.get('name'),
-                measurement_unit=item.get('measurement_unit')
-            )
+        with open(f"{PATH}ingredients.csv", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            next(reader)
+            for row in reader:
+                print(row)
+                ingredient = Ingredient(
+                    id=row[0],
+                    name=row[1],
+                    measurement_unit=row[2],
+                )
+                ingredient.save()
+
+
+
