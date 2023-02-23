@@ -1,4 +1,4 @@
-django==2.2.16
+django==3.2.7
 django-colorfield==0.6.3
 django-filter==21.1
 djangorestframework==3.12.4
