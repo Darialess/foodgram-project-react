@@ -1,34 +1,19 @@
-import csv
-import os
+import json
 
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 from recipes.models import Ingredient
 
-DATA_ROOT = os.path.join(settings.BASE_DIR, 'data')
-
 
 class Command(BaseCommand):
-    """
-    Добавляем ингредиенты из файла CSV
-    """
-    help = 'loading ingredients from data in json or csv'
-
-    def add_arguments(self, parser):
-        parser.add_argument('filename', default='ingredients.csv', nargs='?',
-                            type=str)
+    help = ' Загрузить данные в модель ингредиентов '
 
     def handle(self, *args, **options):
-        try:
-            with open(os.path.join(DATA_ROOT, options['filename']), 'r',
-                      encoding='utf-8') as f:
-                data = csv.reader(f)
-                for row in data:
-                    name, measurement_unit = row
-                    Ingredient.objects.get_or_create(
-                        name=name,
-                        measurement_unit=measurement_unit
-                    )
-        except FileNotFoundError:
-            raise CommandError('Добавьте файл ingredients в директорию data')
+        self.stdout.write(self.style.WARNING('Старт команды'))
+        with open('data/ingredients.json', encoding='utf-8',
+                  ) as data_file_ingredients:
+            ingredient_data = json.loads(data_file_ingredients.read())
+            for ingredients in ingredient_data:
+                Ingredient.objects.get_or_create(**ingredients)
+                
+        self.stdout.write(self.style.SUCCESS('Данные загружены'))
