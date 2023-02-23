@@ -84,7 +84,6 @@ jobs:
             sudo docker-compose exec -T backend python manage.py collectstatic --noinput
             sudo docker-compose exec -T backend python manage.py makemigrations --noinput
             sudo docker-compose exec -T backend python manage.py migrate --noinput    
-            echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='${{ secrets.ADMIN_USERNAME }}').exists() or User.objects.create_superuser('${{ secrets.ADMIN_USERNAME }}', 'blondolly@yandex.ru', '${{ secrets.ADMIN_PASSWORD }}')" | sudo docker-compose exec -T web python manage.py shell  
             
   send_message:
     runs-on: ubuntu-latest
