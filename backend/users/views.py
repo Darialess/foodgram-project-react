@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
+from django.db.models import Count
 from .models import Subscribe, User
 from .serializers import CustomUserSerializer, SubscribeSerializer
 
@@ -16,19 +16,22 @@ class CustomUserViewSet(UserViewSet):
     pagination_class = LimitPageNumberPagination
 
     @action(
-        detail=True,
-        methods=['post', 'delete'],
+        detail=True, methods=['post', 'delete'],
         permission_classes=[IsAuthenticated]
     )
     def subscribe(self, request, **kwargs):
         user = request.user
         author_id = self.kwargs.get('id')
         author = get_object_or_404(User, id=author_id)
+        serializer = SubscribeSerializer(
+            data={"user": request.user.id, "author": id}
+        )
 
         if request.method == 'POST':
-            serializer = SubscribeSerializer(author,
-                                             data=request.data,
-                                             context={"request": request})
+            serializer = SubscribeSerializer(
+                author,
+                data=request.data,
+                context={"request": request})
             serializer.is_valid(raise_exception=True)
             Subscribe.objects.create(user=user, author=author)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -39,17 +42,19 @@ class CustomUserViewSet(UserViewSet):
                                              author=author)
             subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return None
 
     @action(
         detail=False,
+        methods=['get'],
         permission_classes=[IsAuthenticated]
     )
     def subscriptions(self, request):
         user = request.user
         queryset = User.objects.filter(following__user=user)
+        queryset.annotate(recipes_count=Count('recipes'))
         pages = self.paginate_queryset(queryset)
-        serializer = SubscribeSerializer(pages,
-                                         many=True,
-                                         context={'request': request})
+        serializer = SubscribeSerializer(
+            pages,
+            many=True,
+            context={'request': request})
         return self.get_paginated_response(serializer.data)
