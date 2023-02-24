@@ -25,11 +25,13 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST
 )
 from rest_framework.views import APIView
+from rest_framework.exceptions import MethodNotAllowed
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = LimitPageNumberPagination
+    serializer_class = RecipeReadSerializer
     permission_classes = (AdminOrAuthorOrReadOnly,)
 
     def get_serializer_class(self):
@@ -40,34 +42,27 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        serializer = RecipeReadSerializer(
-            instance=serializer.instance,
-            context={'request': self.request}
-        )
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=HTTP_201_CREATED, headers=headers
-        )
+    @action(methods=['post', 'delete'], detail=True,
+            permission_classes=[IsAuthenticated])
+    def favorite(self, request, pk):
+        recipe = get_object_or_404(Recipe, id=pk)
+        if request.method == 'POST':
+            if Favorite.objects.filter(user=request.user,
+                                       recipe=recipe).exists():
+                return Response({'detail': 'Рецепт уже добавлен в избранное.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            new_fav = Favorite.objects.create(user=request.user, recipe=recipe)
+            serializer = FavoriteSerializer(new_fav,
+                                            context={'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.method == 'DELETE':
+            old_fav = get_object_or_404(Favorite,
+                                        user=request.user,
+                                        recipe=recipe)
+            self.perform_destroy(old_fav)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        raise MethodNotAllowed(request.method)
 
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(
-            instance, data=request.data, partial=partial
-        )
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        serializer = RecipeReadSerializer(
-            instance=serializer.instance,
-            context={'request': self.request},
-        )
-        return Response(
-            serializer.data, status=HTTP_200_OK
-        )
 
     @action(
         detail=True,
@@ -116,35 +111,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = attachment
         return response
 
-
-class FavoriteView(APIView):
-    """ Добавление/удаление рецепта из избранного. """
-    permission_classes = [IsAuthenticated, ]
-    pagination_class = LimitPageNumberPagination
-
-    def post(self, request, id):
-        data = {
-            'user': request.user.id,
-            'recipe': id
-        }
-        if not Favorite.objects.filter(
-           user=request.user, recipe__id=id).exists():
-            serializer = FavoriteSerializer(
-                data=data, context={'request': request}
-            )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    serializer.data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, id):
-        recipe = get_object_or_404(Recipe, id=id)
-        if Favorite.objects.filter(
-           user=request.user, recipe=recipe).exists():
-            Favorite.objects.filter(user=request.user, recipe=recipe).delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class IngredientViewSet(ReadOnlyModelViewSet):

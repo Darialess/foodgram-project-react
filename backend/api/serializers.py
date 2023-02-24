@@ -108,25 +108,30 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def create_ingredients(self, ingredients, recipe):
         for ingredient in ingredients:
-            Ingredient.objects.create(
-                recipe=recipe,
-                ingredient_id=ingredient.get('id'),
-                amount=ingredient.get('amount'), )
+            ingredient_id = ingredient['id']
+            amount = ingredient['amount']
+            IngredientRecipe.objects.create(
+                recipe=recipe, ingredient=ingredient_id, amount=amount
+            )
 
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
-        recipe = Recipe.objects.create(**validated_data)
-        recipe.tags.set(tags)
-        self.create_ingredients(ingredients, recipe)
-        return recipe
+        new_recipe = Recipe.objects.create(**validated_data)
+        new_recipe.tags.set(tags)
+        self.write_ingredients(new_recipe, ingredients)
+        return new_recipe
 
     def update(self, instance, validated_data):
-        tags = validated_data.pop('tag')
-        instance = super().update(instance, validated_data)
-        instance.tag.clear()
-        instance.tag.set(tags)
-        instance.ingredient.clear()
+        instance.image = validated_data.get('image', instance.image)
+        instance.name = validated_data.get('name', instance.name)
+        instance.text = validated_data.get('text', instance.text)
+        instance.cooking_time = validated_data.get('cooking_time',
+                                                   instance.cooking_time)
+        instance.tags.set(validated_data.get('tags', instance.tags))
+        instance.ingredients.clear()
+        self.write_ingredients(instance, validated_data.pop('ingredients'))
+        super().update(instance, validated_data)
         instance.save()
         return instance
 
@@ -178,23 +183,14 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
 class FavoriteSerializer(serializers.ModelSerializer):
     """Сериализатор для избранного."""
+    id = serializers.ReadOnlyField(source='recipe.id')
+    name = serializers.ReadOnlyField(source='recipe.name')
+    image = serializers.ImageField(read_only=True, source='recipe.image')
+    cooking_time = serializers.ReadOnlyField(source='recipe.cooking_time')
+
     class Meta:
         model = Favorite
-        fields = ('user', 'recipe',)
-
-    def validate(self, data):
-        user = data['user']
-        if user.favorites.filter(recipe=data['recipe']).exists():
-            raise serializers.ValidationError(
-                'Рецепт уже добавлен в избранное.'
-            )
-        return data
-
-    def to_representation(self, instance):
-        request = self.context.get('request')
-        context = {'request': request}
-        return ShortRecipeSerializer(
-            instance.recipe, context=context).data
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
