@@ -119,7 +119,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         new_recipe = Recipe.objects.create(**validated_data)
         new_recipe.tags.set(tags)
-        self.write_ingredients(new_recipe, ingredients)
+        self.create_ingredients(new_recipe, ingredients)
         return new_recipe
 
     def update(self, instance, validated_data):
@@ -173,13 +173,16 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, obj):
         request = self.context.get('request')
-        return request.user.is_authenticated and Favorite.objects.filter(
-            user=request.user, recipe__id=obj.id).exists()
+        if not request or request.user.is_anonymous:
+            return False
+        return Favorite.objects.filter(user=request.user, recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
         request = self.context.get('request')
-        return request.user.is_authenticated and ShoppingCart.objects.filter(
-            user=request.user, recipe__id=obj.id).exists()
+        if not request or request.user.is_anonymous:
+            return False
+        return ShoppingCart.objects.filter(
+            user=request.user, recipe=obj).exists()
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
