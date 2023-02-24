@@ -38,54 +38,55 @@ class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminOrAuthorOrReadOnly,)
 
     def get_serializer_class(self):
-        if self.request.method in SAFE_METHODS:
+        if self.request.method == 'GET':
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-    @action(methods=['post', 'delete'], detail=True,
-            permission_classes=[IsAuthenticated])
-    def favorite(self, request, pk):
-        recipe = get_object_or_404(Recipe, id=pk)
+    def add_recipe_to_fav_or_shopcart(self, request, pk, model):
+        user = request.user
+        recipe = get_object_or_404(Recipe, pk=pk)
+        object = model.objects.filter(
+            user=user,
+            recipe=recipe
+        )
         if request.method == 'POST':
-            if Favorite.objects.filter(user=request.user,
-                                       recipe=recipe).exists():
-                return Response({'detail': 'Рецепт уже добавлен в избранное.'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            new_fav = Favorite.objects.create(user=request.user, recipe=recipe)
-            serializer = FavoriteSerializer(new_fav,
-                                            context={'request': request})
+            model.objects.get_or_create(
+                user=user,
+                recipe=recipe
+            )
+            serializer = ShoppingCartSerializer(recipe)
+            serializer.validate(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if request.method == 'DELETE':
-            old_fav = get_object_or_404(Favorite,
-                                        user=request.user,
-                                        recipe=recipe)
-            self.perform_destroy(old_fav)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        raise MethodNotAllowed(request.method)
 
-    @action(methods=['post', 'delete'], detail=True,
-            permission_classes=[IsAuthenticated])
-    def shopping_cart(self, request, pk):
-        recipe = get_object_or_404(Recipe, id=pk)
-        if request.method == 'POST':
-            if ShoppingCart.objects.filter(user=request.user,
-                                           recipe=recipe).exists():
-                return Response({'detail': 'Рецепт уже в корзине.'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            add_recipe = ShoppingCart.objects.create(user=request.user,
-                                                     recipe=recipe)
-            serializer = ShoppingCartSerializer(add_recipe,
-                                                context={'request': request})
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
         if request.method == 'DELETE':
-            instance = get_object_or_404(
-                ShoppingCart, user=request.user, recipe=recipe)
-            self.perform_destroy(instance)
+            object.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        raise MethodNotAllowed(request.method)
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        permission_classes=[IsAuthenticated],
+        name='shopping_cart'
+    )
+    def shopping_cart(self, request, pk=None):
+        return self.add_recipe_to_fav_or_shopcart(request, pk,ShoppingCart)
+
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        permission_classes=[IsAuthenticated],
+        name='favorite'
+    )
+    def favorite(self, request, pk=None):
+        return self.add_recipe_to_fav_or_shopcart(request, pk, Favorite)
 
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])
@@ -105,7 +106,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         attachment = 'attachment; filename="shopping_list.txt"'
         response['Content-Disposition'] = attachment
         return response
-
 
 
 class IngredientViewSet(ReadOnlyModelViewSet):
