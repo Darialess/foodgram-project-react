@@ -9,25 +9,13 @@ from django.db.models import Count
 from .models import Subscribe, User
 from .serializers import CustomUserSerializer, SubscribeSerializer
 from rest_framework import exceptions, status
+from rest_framework import mixins, status, viewsets
 
 
 class CustomUserViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
     pagination_class = LimitPageNumberPagination
-
-    @action(
-        detail=False,
-        permission_classes=[IsAuthenticated]
-    )
-    def subscriptions(self, request):
-        user = request.user
-        queryset = User.objects.filter(user=user)
-        pages = self.paginate_queryset(queryset)
-        serializer = SubscribeSerializer(pages,
-                                         many=True,
-                                         context={'request': request})
-        return self.get_paginated_response(serializer.data)
 
     @action(
         detail=True,
@@ -73,3 +61,21 @@ class CustomUserViewSet(UserViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class SubscribeViewSet(viewsets.ModelViewSet):
+    """ Список авторов на которых подписан пользователь """
+    permission_classes = [IsAuthenticated]
+    serializer_class = SubscribeSerializer
+
+    def list(self, request):
+        user = request.user
+        authors = Subscribe.objects.select_related('author').filter(user=user)
+        queryset = User.objects.filter(pk__in=authors.values('author_id'))
+        page = self.paginate_queryset(queryset)
+        serializer = SubscribeSerializer, many=True, context={
+            'queryset': queryset,
+            'user': user
+        }
+        )
+        return self.get_paginated_response(serializer.data)

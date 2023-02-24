@@ -28,6 +28,7 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import MethodNotAllowed
 from .filters import RecipeFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from users.permissions import IsAuthorOrReadOnly
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -35,7 +36,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = LimitPageNumberPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
-    permission_classes = (AdminOrAuthorOrReadOnly,)
+    permission_classes = (IsAuthorOrReadOnly,)
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
