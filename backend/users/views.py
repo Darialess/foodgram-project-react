@@ -73,7 +73,7 @@ class SubscribeViewSet(viewsets.ModelViewSet):
         authors = Subscribe.objects.select_related('author').filter(user=user)
         queryset = User.objects.filter(pk__in=authors.values('author_id'))
         page = self.paginate_queryset(queryset)
-        serializer = SubscribeSerializer, many=True, context={
+        serializer = SubscribeSerializer(page, many=True, context={
             'queryset': queryset,
             'user': user
         }
