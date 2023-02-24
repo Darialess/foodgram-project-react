@@ -96,7 +96,7 @@ class Recipe(models.Model):
 
 
 class Favorite(models.Model):
-    """Модель - Избранное."""
+    """Модель для избранногою"""
 
     user = models.ForeignKey(
         User,
@@ -108,7 +108,7 @@ class Favorite(models.Model):
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
-        related_name='favorites'
+        related_name='is_favorites'
     )
 
     class Meta:
