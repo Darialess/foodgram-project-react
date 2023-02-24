@@ -22,14 +22,18 @@ class CustomUserViewSet(UserViewSet):
         serializer_class=SubscribeSerializer,
         permission_classes=(IsAuthenticated, )
     )
-    def subscriptions(self, request):
-        user = self.request.user
-        user_subscriptions = user.subscribes.all()
-        authors = [item.author.id for item in user_subscriptions]
-        queryset = User.objects.filter(pk__in=authors)
-        paginated_queryset = self.paginate_queryset(queryset)
-        serializer = self.get_serializer(paginated_queryset, many=True)
 
+    @action(detail=False, methods=['get'],
+            permission_classes=[IsAuthenticated])
+    def subscriptions(self, request):
+        user = request.user
+        queryset = Subscribe.objects.filter(user=user)
+        pages = self.paginate_queryset(queryset)
+        serializer = SubscribeSerializer(
+            pages,
+            many=True,
+            context={'request': request}
+        )
         return self.get_paginated_response(serializer.data)
 
     @action(
