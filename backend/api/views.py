@@ -5,20 +5,26 @@ from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import exceptions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
+from rest_framework.permissions import (
+    IsAuthenticated,
+    AllowAny,
+    IsAuthenticatedOrReadOnly, SAFE_METHODS
+)
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from users.permissions import IsAdmin, ReadOnly
+from users.permissions import AdminOrAuthorOrReadOnly
 from users.serializers import ShortRecipeSerializer
 
 from .pagination import LimitPageNumberPagination
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
-                          RecipeWriteSerializer, TagSerializer)
+                          RecipeWriteSerializer, TagSerializer, 
+                          FavoriteSerializer, ShoppingCartSerializer)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = LimitPageNumberPagination
+    permission_classes = (AdminOrAuthorOrReadOnly,)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -28,65 +34,55 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
-    @action(detail=True, methods=('post', 'delete'))
-    def favorite(self, request, pk=None):
-        user = self.request.user
-        recipe = get_object_or_404(Recipe, pk=pk)
-        if self.request.method == 'POST':
-            if Favorite.objects.filter(
-                user=user,
-                recipe=recipe
-            ).exists():
-                raise exceptions.ValidationError('Рецепт уже в избранном.')
-            Favorite.objects.create(user=user, recipe=recipe)
-            serializer = ShortRecipeSerializer(
-                recipe,
-                context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if self.request.method == 'DELETE':
-            if not Favorite.objects.filter(
-                user=user,
-                recipe=recipe
-            ).exists():
-                raise exceptions.ValidationError(
-                    'Рецепта нет в избранном, либо он уже удален.'
-                )
-            favorite = get_object_or_404(Favorite, user=user, recipe=recipe)
-            favorite.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    @action(
+        detail=True,
+        methods=('POST',),
+        permission_classes=[IsAuthenticated])
+    def favorite(self, request, pk):
+        context = {"request": request}
+        recipe = get_object_or_404(Recipe, id=pk)
+        data = {
+            'user': request.user.id,
+            'recipe': recipe.id
+        }
+        serializer = FavoriteSerializer(data=data, context=context)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=('post', 'delete'))
-    def shopping_cart(self, request, pk=None):
-        user = self.request.user
-        recipe = get_object_or_404(Recipe, pk=pk)
-        if self.request.method == 'POST':
-            if ShoppingCart.objects.filter(
-                user=user,
-                recipe=recipe
-            ).exists():
-                raise exceptions.ValidationError('Рецепт уже в избранном.')
-            ShoppingCart.objects.create(user=user, recipe=recipe)
-            serializer = ShortRecipeSerializer(
-                recipe,
-                context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if self.request.method == 'DELETE':
-            if not ShoppingCart.objects.filter(
-                user=user,
-                recipe=recipe
-            ).exists():
-                raise exceptions.ValidationError(
-                    'Рецепта нет в избранном, либо он уже удален.'
-                )
-            shoppingcart = get_object_or_404(
-                ShoppingCart, user=user, recipe=recipe
-            )
-            shoppingcart.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk):
+        get_object_or_404(
+            Favorite,
+            user=request.user,
+            recipe=get_object_or_404(Recipe, id=pk)
+        ).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=True,
+        methods=('POST',),
+        permission_classes=[IsAuthenticated])
+    def shopping_cart(self, request, pk):
+        context = {'request': request}
+        recipe = get_object_or_404(Recipe, id=pk)
+        data = {
+            'user': request.user.id,
+            'recipe': recipe.id
+        }
+        serializer = ShoppingCartSerializer(data=data, context=context)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, pk):
+        get_object_or_404(
+            ShoppingCart,
+            user=request.user.id,
+            recipe=get_object_or_404(Recipe, id=pk)
+        ).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])
@@ -111,10 +107,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class IngredientViewSet(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = [IsAdmin | ReadOnly]
+    permission_classes = (IsAuthenticatedOrReadOnly, )
 
 
 class TagViewSet(ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = [IsAdmin | ReadOnly]
+    permission_classes = (AllowAny,)
