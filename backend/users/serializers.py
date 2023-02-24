@@ -5,6 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
 
 from .models import Subscribe, User
+from api.serializers import ShoppingCartSerializer
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -37,49 +38,39 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 
 
 class SubscribeSerializer(CustomUserSerializer):
-    email = serializers.ReadOnlyField(source='author.email')
-    id = serializers.ReadOnlyField(source='author.id')
-    username = serializers.ReadOnlyField(source='author.username')
-    first_name = serializers.ReadOnlyField(source='author.first_name')
-    last_name = serializers.ReadOnlyField(source='author.last_name')
-    is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name',
-                  'is_subscribed', 'recipes', 'recipes_count')
-
-    def validate(self, data):
-        author = self.instance
-        user = self.context.get('request').user
-        if Subscribe.objects.filter(author=author, user=user).exists():
-            raise ValidationError(
-                detail='Вы уже подписаны на этого пользователя!',
-                code=status.HTTP_400_BAD_REQUEST
-            )
-        if user == author:
-            raise ValidationError(
-                detail='Вы не можете подписаться на самого себя!',
-                code=status.HTTP_400_BAD_REQUEST
-            )
-        return data
-
-    def get_recipes_count(self, obj):
-        return obj.recipes.count()
-
-    def get_is_subscribed(self, obj):
-        user = self.context['request'].user
-        if user.is_authenticated:
-            return Subscribe.objects.filter(user=user, author_id=obj.id).exists()
-        return False
+        fields = [
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes',
+            'recipes_count',
+        ]
 
     def get_recipes(self, obj):
-        request = self.context.get('request')
-        limit = request.GET.get('recipes_limit')
-        recipes = obj.recipes.all()
-        if limit:
-            recipes = recipes[:int(limit)]
-        serializer = ShortRecipeSerializer(recipes, many=True, read_only=True)
+        recipes = Recipe.objects.filter(author_id=obj.id)
+        serializer = ShoppingCartSerializer(recipes, many=True)
         return serializer.data
+
+    def get_recipes_count(self, obj):
+        recipes = Recipe.objects.filter(author_id=obj.id)
+        return recipes.count()
+
+    def get_is_subscribed(self, obj):
+        return Subscribe.objects.filter(
+            user=self.context.get('user'),
+            author=obj
+        ).exists()
+
+    def update(self, instance, validated_data):
+        author = User.objects.get(username=self.context.get('author'))
+        instance.email = author.email
+        return instance

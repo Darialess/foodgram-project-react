@@ -77,7 +77,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         name='shopping_cart'
     )
     def shopping_cart(self, request, pk=None):
-        return self.add_recipe_to_fav_or_shopcart(request, pk,ShoppingCart)
+        return self.add_recipe_to_fav_or_shopcart(request, pk, ShoppingCart)
 
     @action(
         detail=True,
