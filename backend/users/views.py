@@ -16,12 +16,6 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = CustomUserSerializer
     pagination_class = LimitPageNumberPagination
 
-    @action(
-        detail=False,
-        methods=('get',),
-        serializer_class=SubscribeSerializer,
-        permission_classes=(IsAuthenticated, )
-    )
 
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])

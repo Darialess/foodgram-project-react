@@ -24,6 +24,7 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST
 )
+from rest_framework.views import APIView
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -67,30 +68,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(
             serializer.data, status=HTTP_200_OK
         )
-
-    @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(IsAuthenticated,))
-    def favorite(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
-        if request.method == 'POST':
-            serializer = RecipeReadSerializer(
-                recipe, data=request.data,
-                context={"request": request}
-                )
-            serializer.is_valid(raise_exception=True)
-            if not Favorite.objects.filter(user=request.user,
-                                           recipe=recipe).exists():
-                Favorite.objects.create(user=request.user, recipe=recipe)
-                return Response(serializer.data,
-                                status=status.HTTP_201_CREATED)
-            return Response({'errors': 'Рецепт уже в избранном.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        if request.method == 'DELETE':
-            get_object_or_404(Favorite, user=request.user,
-                              recipe=recipe).delete()
-            return Response({'detail': 'Рецепт успешно удален из избранного.'},
-                            status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=True,
@@ -138,6 +115,36 @@ class RecipeViewSet(viewsets.ModelViewSet):
         attachment = 'attachment; filename="shopping_list.txt"'
         response['Content-Disposition'] = attachment
         return response
+
+
+class FavoriteView(APIView):
+    """ Добавление/удаление рецепта из избранного. """
+    permission_classes = [IsAuthenticated, ]
+    pagination_class = LimitPageNumberPagination
+
+    def post(self, request, id):
+        data = {
+            'user': request.user.id,
+            'recipe': id
+        }
+        if not Favorite.objects.filter(
+           user=request.user, recipe__id=id).exists():
+            serializer = FavoriteSerializer(
+                data=data, context={'request': request}
+            )
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    serializer.data, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, id):
+        recipe = get_object_or_404(Recipe, id=id)
+        if Favorite.objects.filter(
+           user=request.user, recipe=recipe).exists():
+            Favorite.objects.filter(user=request.user, recipe=recipe).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class IngredientViewSet(ReadOnlyModelViewSet):
