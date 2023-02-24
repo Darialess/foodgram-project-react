@@ -31,7 +31,6 @@ from rest_framework.exceptions import MethodNotAllowed
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = LimitPageNumberPagination
-    serializer_class = RecipeReadSerializer
     permission_classes = (AdminOrAuthorOrReadOnly,)
 
     def get_serializer_class(self):
