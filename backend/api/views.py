@@ -27,12 +27,14 @@ from rest_framework.status import (
 from rest_framework.views import APIView
 from rest_framework.exceptions import MethodNotAllowed
 from .filters import RecipeFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = LimitPageNumberPagination
-    filter_class = RecipeFilter
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
     permission_classes = (AdminOrAuthorOrReadOnly,)
 
     def get_serializer_class(self):
