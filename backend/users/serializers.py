@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
 
 from .models import Subscribe, User
-from api.serializers import ShoppingCartSerializer
+
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -57,7 +57,7 @@ class SubscribeSerializer(CustomUserSerializer):
 
     def get_recipes(self, obj):
         recipes = Recipe.objects.filter(author_id=obj.id)
-        serializer = ShoppingCartSerializer(recipes, many=True)
+        serializer = ShortRecipeSerializer(recipes, many=True)
         return serializer.data
 
     def get_recipes_count(self, obj):
