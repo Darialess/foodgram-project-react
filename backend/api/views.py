@@ -3,17 +3,15 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag)
-from rest_framework import exceptions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (
     IsAuthenticated,
-    AllowAny,
     IsAuthenticatedOrReadOnly, SAFE_METHODS
 )
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from users.permissions import AdminOrAuthorOrReadOnly
-from users.serializers import ShortRecipeSerializer
 
 from .pagination import LimitPageNumberPagination
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
