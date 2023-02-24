@@ -107,26 +107,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response({'errors': 'Рецепт уже удален!'},
                         status=status.HTTP_400_BAD_REQUEST)
 
-
-@api_view(['GET'])
-def download_shopping_cart(request):
-    ingredient_list = "Cписок покупок:"
-    ingredients = IngredientRecipe.objects.filter(
-        recipe__shopping_cart__user=request.user
-    ).values(
-        'ingredient__name', 'ingredient__measurement_unit'
-    ).annotate(ingredient_amount=Sum('amount'))
-    for num, i in enumerate(ingredients):
-        ingredient_list += (
-            f"\n{i['ingredient__name']} - "
-            f"{i['ingredient_amount']} {i['ingredient__measurement_unit']}"
+    @action(detail=False, permission_classes=[IsAuthenticated])
+    def download_shopping_cart(self, request):
+        ingredients = IngredientRecipe.objects.filter(
+            recipe__shopping_carts__user=request.user).values(
+            'ingredient__name', 'ingredient__measurement_unit', 'amount'
         )
-        if num < ingredients.count() - 1:
-            ingredient_list += ', '
-    file = 'shopping_list'
-    response = HttpResponse(ingredient_list, 'Content-Type: application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{file}.pdf"'
-    return response
+        shopping_cart = '\n'.join([
+            f'{ingredient["ingredient__name"]} - {ingredient["amount"]} '
+            f'{ingredient["ingredient__measurement_unit"]}'
+            for ingredient in ingredients
+        ])
+        filename = 'shopping_cart.txt'
+        response = HttpResponse(shopping_cart, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        return response
 
 
 class IngredientViewSet(ReadOnlyModelViewSet):

@@ -1,6 +1,7 @@
 from django.core.validators import MinValueValidator
 from django.db import models
 from users.models import User
+from django.db.models import UniqueConstraint
 
 
 class Tag(models.Model):
@@ -110,10 +111,12 @@ class Favorite(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Избранное'
-
-    def __str__(self):
-        return self.name
+        constraints = [
+            UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='user_favorite_unique'
+            )
+        ]
 
 
 class ShoppingCart(models.Model):
@@ -132,11 +135,13 @@ class ShoppingCart(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Корзина покупок'
-
-    def __str__(self):
-        return self.name
-
+        constraints = [
+            UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='user_shoppingcart_unique'
+            )
+        ]
+        
 
 class IngredientRecipe(models.Model):
     """Модель для связи ингредиентов и их количества в рецепте"""
