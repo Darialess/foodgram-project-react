@@ -24,10 +24,10 @@ class CustomUserSerializer(UserSerializer):
         )
 
     def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        if not request or request.user.is_anonymous:
-            return False
-        return Subscribe.objects.filter(user=request.user, author=obj).exists()
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return Subscribe.objects.filter(user=user, author_id=obj.id).exists()
+        return False
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
@@ -37,8 +37,14 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
 
 
 class SubscribeSerializer(CustomUserSerializer):
-    recipes_count = SerializerMethodField()
-    recipes = SerializerMethodField()
+    email = serializers.ReadOnlyField(source='author.email')
+    id = serializers.ReadOnlyField(source='author.id')
+    username = serializers.ReadOnlyField(source='author.username')
+    first_name = serializers.ReadOnlyField(source='author.first_name')
+    last_name = serializers.ReadOnlyField(source='author.last_name')
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -62,6 +68,12 @@ class SubscribeSerializer(CustomUserSerializer):
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
+
+    def get_is_subscribed(self, obj):
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return Subscribe.objects.filter(user=user, author_id=obj.id).exists()
+        return False
 
     def get_recipes(self, obj):
         request = self.context.get('request')

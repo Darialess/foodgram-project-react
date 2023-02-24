@@ -63,34 +63,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         raise MethodNotAllowed(request.method)
 
-
-    @action(
-        detail=True,
-        methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated]
-    )
+    @action(methods=['post', 'delete'], detail=True,
+            permission_classes=[IsAuthenticated])
     def shopping_cart(self, request, pk):
-        if request.method == 'POST':
-            return self.add_to(ShoppingCart, request.user, pk)
-        else:
-            return self.delete_from(ShoppingCart, request.user, pk)
-
-    def add_to(self, model, user, pk):
-        if model.objects.filter(user=user, recipe__id=pk).exists():
-            return Response({'errors': 'Рецепт уже добавлен!'},
-                            status=status.HTTP_400_BAD_REQUEST)
         recipe = get_object_or_404(Recipe, id=pk)
-        model.objects.create(user=user, recipe=recipe)
-        serializer = ShortRecipeSerializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete_from(self, model, user, pk):
-        obj = model.objects.filter(user=user, recipe__id=pk)
-        if obj.exists():
-            obj.delete()
+        if request.method == 'POST':
+            if ShoppingCart.objects.filter(user=request.user,
+                                           recipe=recipe).exists():
+                return Response({'detail': 'Рецепт уже в корзине.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            add_recipe = ShoppingCart.objects.create(user=request.user,
+                                                     recipe=recipe)
+            serializer = ShoppingCartSerializer(add_recipe,
+                                                context={'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.method == 'DELETE':
+            instance = get_object_or_404(
+                ShoppingCart, user=request.user, recipe=recipe)
+            self.perform_destroy(instance)
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response({'errors': 'Рецепт уже удален!'},
-                        status=status.HTTP_400_BAD_REQUEST)
+        raise MethodNotAllowed(request.method)
 
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])
