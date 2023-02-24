@@ -59,7 +59,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Tag.objects.all())
-    ingredients = IngredientInRecipeSerializer(
+    ingredients = IngredientsEditSerializer(
         many=True)
 
     class Meta:
@@ -149,7 +149,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(
         many=True,
         read_only=True)
-    author = author = CustomUserSerializer(read_only=True)
+    author =  CustomUserSerializer(read_only=True)
     ingredients = IngredientInRecipeSerializer(
         many=True,
         read_only=True,
@@ -195,6 +195,12 @@ class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
         fields = ('id', 'name', 'image', 'cooking_time')
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        context = {'request': request}
+        return ShortRecipeSerializer(
+            instance.recipe, context=context).data
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):

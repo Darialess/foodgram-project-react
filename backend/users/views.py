@@ -22,7 +22,7 @@ class CustomUserViewSet(UserViewSet):
     )
     def subscriptions(self, request):
         user = request.user
-        queryset = User.objects.filter(subscribing__user=user)
+        queryset = User.objects.filter(user=user)
         pages = self.paginate_queryset(queryset)
         serializer = SubscribeSerializer(pages,
                                          many=True,
