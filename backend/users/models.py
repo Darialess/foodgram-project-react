@@ -34,7 +34,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name='Фамилия',
         help_text='Фамилия пользователя'
     )
-
+    is_subscribed = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
