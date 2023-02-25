@@ -47,7 +47,7 @@ class Subscribe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="following",
+        related_name="subscribe",
     )
 
     class Meta:
