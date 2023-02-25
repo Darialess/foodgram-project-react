@@ -12,10 +12,10 @@ from rest_framework.viewsets import mixins
 from api.filters import Filter, NameSearchFilter
 from users.permissions import IsAuthorOrReadOnly
 from api.serializers import (CreateRecipeSerialzer, IngredientsSerializer,
-                             RecipeSerialzer, ShopingCardSerializer,
+                             RecipeSerialzer, ShoppingCartSerializer,
                              TagsSerializer)
 from recipes.models import (Favorite, IngredientAmount, Ingredients, Recipe,
-                            Tags, UserShopCart)
+                            Tags, ShoppingCart)
 from recipes.utilits import make_send_file
 
 
