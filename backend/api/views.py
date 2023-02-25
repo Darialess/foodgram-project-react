@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -54,25 +55,9 @@ class RecipeViewSet(ModelViewSet):
     pagination_class = CustomPageNumberPagination
 
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
+        if self.action in ['create', 'partial_update']:
             return RecipeListSerializer
         return RecipeSerializer
-
-    @staticmethod
-    def post_method_for_actions(request, pk, serializers):
-        data = {'user': request.user.id, 'recipe': pk}
-        serializer = serializers(data=data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @staticmethod
-    def delete_method_for_actions(request, pk, model):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=pk)
-        model_obj = get_object_or_404(model, user=user, recipe=recipe)
-        model_obj.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["POST"],
             permission_classes=[IsAuthenticated])
@@ -99,35 +84,18 @@ class RecipeViewSet(ModelViewSet):
     @action(detail=False, methods=['get'],
             permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
-        final_list = {}
         ingredients = IngredientAmount.objects.filter(
-            recipe__carts__user=request.user).values_list(
-            'ingredient__name', 'ingredient__measurement_unit',
-            'amount'
-        )
-        for item in ingredients:
-            name = item[0]
-            if name not in final_list:
-                final_list[name] = {
-                    'measurement_unit': item[1],
-                    'amount': item[2]
-                }
-            else:
-                final_list[name]['amount'] += item[2]
-        pdfmetrics.registerFont(
-            TTFont('Handicraft', 'data/Handicraft.ttf', 'UTF-8'))
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = ('attachment; '
-                                           'filename="shopping_list.pdf"')
-        page = canvas.Canvas(response)
-        page.setFont('Handicraft', size=24)
-        page.drawString(200, 800, 'Список покупок')
-        page.setFont('Handicraft', size=16)
-        height = 750
-        for i, (name, data) in enumerate(final_list.items(), 1):
-            page.drawString(75, height, (f'{i}. {name} - {data["amount"]} '
-                                         f'{data["measurement_unit"]}'))
-            height -= 25
-        page.showPage()
-        page.save()
+            recipe__shopping_cart__user=request.user
+        ).values(
+            'ingredient__name',
+            'ingredient__measurement_unit'
+        ).annotate(total_amount=Sum('amount'))
+        shopping_list = ['{} ({}) - {}\n'.format(
+            ingredient['ingredient__name'],
+            ingredient['ingredient__measurement_unit'],
+            ingredient['total_amount']
+        ) for ingredient in ingredients]
+        response = HttpResponse(shopping_list, content_type='text/plain')
+        attachment = 'attachment; filename="shopping_list.txt"'
+        response['Content-Disposition'] = attachment
         return response
