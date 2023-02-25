@@ -83,7 +83,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=['post', 'delete'],
         permission_classes=[IsAuthenticated],
-        name='favorite'
+        name='favorites'
     )
     def favorite(self, request, pk=None):
         return self.add_recipe_to_fav_or_shopcart(request, pk, Favorite)

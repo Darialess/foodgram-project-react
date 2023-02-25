@@ -135,6 +135,8 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 }
 
+DEFAULT_RECIPE_LIMIT = 3
+
 
 DJOSER = {
     "LOGIN_FIELD": 'email',

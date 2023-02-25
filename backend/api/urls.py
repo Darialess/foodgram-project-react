@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from users.views import CustomUserViewSet
 
 from .views import IngredientViewSet, RecipeViewSet, TagViewSet
+from users.views import UserVievSet
 
 router = DefaultRouter()
 
@@ -17,4 +18,8 @@ app_name = 'api'
 urlpatterns = [
     path('', include(router.urls)),
     path('auth/', include('djoser.urls.authtoken')),
+    path('users/<int:id>/subscribe/', FollowApiView.as_view(),
+         name='subscribe'),
+    path('users/subscriptions/', FollowListAPIView.as_view(),
+         name='subscription'),
 ]
