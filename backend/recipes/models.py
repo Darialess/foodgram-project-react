@@ -1,4 +1,3 @@
-from colorfield.fields import ColorField
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
@@ -49,9 +48,10 @@ class Tags(models.Model):
         verbose_name='Название',
         help_text='Название тега'
     )
-    color = ColorField(
+    color = models.CharField(
+        'Цвет',
         unique=True,
-        verbose_name='Цветовой HEX-код'
+        max_length=7
     )
     slug = models.SlugField(
         max_length=32,
