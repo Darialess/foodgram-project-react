@@ -4,7 +4,7 @@ from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag, TagsRecipe)
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from users.serializers import CustomUserSerializer, ShortRecipeSerializer
+from users.serializers import UsersSerializer, UserSerializer
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -52,7 +52,7 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
     """Сериализатор для добавления рецепта."""
-    author = CustomUserSerializer(read_only=True)
+    author = UsersSerializer(read_only=True)
     image = Base64ImageField(
         max_length=None,
         use_url=True)
@@ -152,18 +152,26 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(
         many=True,
         read_only=True)
-    author =  CustomUserSerializer(read_only=True)
+    author =  UsersSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
-        fields = (
-            'id', 'tags', 'author', 'ingredients', 'is_favorited',
-            'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time'
-        )
-
+        fields = [
+            'id',
+            'tags',
+            'author',
+            'ingredients',
+            'is_favorited',
+            'is_in_shopping_cart',
+            'name',
+            'image',
+            'text',
+            'cooking_time',
+        ] 
+        
     def get_ingredients(self, obj):
         ingredients = IngredientRecipe.objects.filter(recipe=obj)
         return IngredientInRecipeSerializer(ingredients, many=True).data

@@ -70,8 +70,6 @@ class UsersSerializer(serializers.ModelSerializer):
         return subcribe.exists()
 
 
-
-
 class ShortRecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
