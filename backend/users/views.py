@@ -1,5 +1,5 @@
 from api.pagination import LimitPageNumberPagination
-from django.shortcuts import get_object_or_404, ListAPIView
+from django.shortcuts import get_object_or_404
 from rest_framework import status, mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -13,7 +13,7 @@ from rest_framework.permissions import (IsAuthenticated,
 from django.contrib.auth.hashers import make_password
 from djoser.views import UserViewSet
 from rest_framework.views import APIView
-
+from rest_framework.generics import ListAPIView
 
 
 class CustomUserViewSet(UserViewSet):
