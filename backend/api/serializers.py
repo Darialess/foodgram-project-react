@@ -127,18 +127,51 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-
-        instance = super().update(instance, validated_data)
-        if tags:
-            instance.tags.clear()
-            instance.tags.set(tags)
-        if ingredients:
-            instance.ingredients.clear()
-            self.create_ingredients(ingredients, instance)
+        instance.image = validated_data.get('image', instance.image)
+        instance.name = validated_data.get('name', instance.name)
+        instance.text = validated_data.get('text', instance.text)
+        instance.cooking_time = validated_data.get(
+            'cooking_time', instance.cooking_time
+        )
+        instance.tags.clear()
+        tags_data = self.initial_data.get('tags')
+        instance.tags.set(tags_data)
+        IngredientRecipe.objects.filter(recipe=instance).all().delete()
+        self.create_ingredients(validated_data.get('ingredients'), instance)
+        instance.save()
         return instance
+
+    def validate_ingredients(self, value):
+        list = []
+        for ing in value:
+            ing_id = dict(ing).get('id')
+            if ing_id in list:
+                raise serializers.ValidationError(
+                    'Ингредиенты не должны повторяться!'
+                )
+            list.append(ing_id)
+        if not list:
+            raise serializers.ValidationError(
+                'В рецепте должны быть ингредиенты'
+            )
+        return value
+
+    def validate_cooking_time(self, value):
+        if value == 0:
+            raise serializers.ValidationError(
+                'Время приготовления должно быть больше нуля.'
+            )
+        return value
+
+    def validate_tags(self, value):
+        list = []
+        for tag in value:
+            if tag in list:
+                raise serializers.ValidationError(
+                    'Теги не должны повторяться!'
+                )
+            list.append(tag)
+        return value
 
     def to_representation(self, instance):
         return RecipeReadSerializer(instance, context={
@@ -185,7 +218,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             user=request.user,
             recipe_id=obj
         ).exists()
-
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):

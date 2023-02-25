@@ -7,9 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Count
 from .models import Subscribe, User
-from .serializers import CustomUserSerializer, SubscribeSerializer
-from rest_framework import exceptions, status
-from rest_framework import mixins, status, viewsets
+from .serializers import CustomUserSerializer, SubscribeSerializer, SubscribeListSerializer
 
 
 class CustomUserViewSet(UserViewSet):
@@ -18,64 +16,50 @@ class CustomUserViewSet(UserViewSet):
     pagination_class = LimitPageNumberPagination
 
     @action(
-        detail=True,
-        methods=('post', 'delete'),
-        serializer_class=SubscribeSerializer
+        detail=False,
+        methods=['get'],
+        permission_classes=[IsAuthenticated]
     )
-    def subscribe(self, request, id=None):
+    def subscriptions(self, request):
         user = self.request.user
-        author = get_object_or_404(User, pk=id)
-
-        if self.request.method == 'POST':
-            if user == author:
-                raise exceptions.ValidationError(
-                    'Подписка на самого себя запрещена.'
-                )
-            if Subscribe.objects.filter(
-                user=user,
-                author=author
-            ).exists():
-                raise exceptions.ValidationError('Подписка уже оформлена.')
-
-            Subscribe.objects.create(user=user, author=author)
-            serializer = self.get_serializer(author)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        if self.request.method == 'DELETE':
-            if not Subscribe.objects.filter(
-                user=user,
-                author=author
-            ).exists():
-                raise exceptions.ValidationError(
-                    'Подписка не была оформлена, либо уже удалена.'
-                )
-
-            subscription = get_object_or_404(
-                Subscribe,
-                user=user,
-                author=author
-            )
-            subscription.delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
-class SubscribeViewSet(viewsets.ModelViewSet):
-    """ Список авторов на которых подписан пользователь """
-    permission_classes = [IsAuthenticated]
-    serializer_class = SubscribeSerializer
-
-    def list(self, request):
-        user = request.user
-        authors = Subscribe.objects.select_related('author').filter(user=user)
-        queryset = User.objects.filter(pk__in=authors.values('author_id'))
-        page = self.paginate_queryset(queryset)
-        serializer = SubscribeSerializer(page, many=True, context={
-            'queryset': queryset,
-            'user': user
-        }
+        queryset = User.objects.filter(following__user=user)
+        if queryset:
+            pages = self.paginate_queryset(queryset)
+            serializer = SubscribeListSerializer(
+                pages,
+                many=True,
+                context={'request': request})
+            return self.get_paginated_response(serializer.data)
+        return Response(
+            'Вы ни на кого не подписаны',
+            status=status.HTTP_400_BAD_REQUEST
         )
-        return self.get_paginated_response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=['POST', 'DELETE'],
+        permission_classes=[IsAuthenticated]
+    )
+    def subscribe(self, request, id):
+        user = request.user
+        author = get_object_or_404(User, id=id)
+        if request.method == 'POST':
+            context = {'request': request}
+            data = {
+                'user': user.id,
+                'author': author.id
+            }
+            serializer = SubscribeSerializer(data=data, context=context)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+        subscribe = get_object_or_404(
+            Subscribe,
+            user=user,
+            author=author
+        )
+        subscribe.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
