@@ -1,39 +1,68 @@
 from django.contrib import admin
 
-from .models import Ingredient, IngredientRecipe, Recipe, ShoppingCart, Tag, Favorite
+from .models import (Favorite, IngredientAmount, Ingredients, Recipe, Tags,
+                     ShoppingCart)
 
 
-class IngredientInline(admin.TabularInline):
-    model = IngredientRecipe
-
-
+@admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'author',)
-    list_filter = ('name', 'author', 'tag',)
-    inlines = [
-        IngredientInline,
+    list_display = [
+        'pk',
+        'author',
+        'name',
+        'image',
+        'text',
+        'cooking_time',
+        'favorites'
+    ]
+    search_fields = ['text']
+
+    def favorites(self, obj):
+
+        return Favorite.objects.filter(recipe=obj).count()
+
+    favorites.short_description = "Количество добавлений в избранное"
+
+
+@admin.register(Ingredients)
+class IngredientAdmin(admin.ModelAdmin):
+    list_display = [
+        'pk',
+        'name',
+    ]
+    search_fields = ['name']
+
+
+@admin.register(IngredientAmount)
+class IngredientAmountAdmin(admin.ModelAdmin):
+    list_display = [
+        'recipe',
+        'ingredient',
+        'amount'
     ]
 
 
-class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'measurement_unit',)
-    list_filter = ('name',)
+@admin.register(Tags)
+class TagsAdmin(admin.ModelAdmin):
+    list_display = [
+        'pk',
+        'name',
+        'color',
+        'slug'
+    ]
 
 
-class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', 'color', 'slug',)
-
-
+@admin.register(ShoppingCart)
 class ShoppingCartAdmin(admin.ModelAdmin):
-    list_display = ('user', 'recipe',)
+    list_display = [
+        'user',
+        'recipe'
+    ]
 
 
+@admin.register(Favorite)
 class FavoriteAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'recipe')
-
-
-admin.site.register(Favorite, FavoriteAdmin)
-admin.site.register(Recipe, RecipeAdmin)
-admin.site.register(Ingredient, IngredientAdmin)
-admin.site.register(Tag, TagAdmin)
-admin.site.register(ShoppingCart, ShoppingCartAdmin)
+    list_display = [
+        'user',
+        'recipe'
+    ]
