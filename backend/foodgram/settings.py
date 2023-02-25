@@ -140,16 +140,5 @@ DEFAULT_RECIPE_LIMIT = 3
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DJOSER = {
-    "LOGIN_FIELD": 'email',
-    "SEND_ACTIVATION_EMAIL": False,
-    'HIDE_USERS': False,
-    "SERIALIZERS": {
-        "user_create": "users.serializers.CustomUserCreateSerializer",
-        "user": "users.serializers.CustomUserSerializer",
-        "current_user": "users.serializers.CustomUserSerializer",
-    },
-    'PERMISSIONS': {
-        'user': ['djoser.permissions.CurrentUserOrAdminOrReadOnly'],
-        'user_list': ['rest_framework.permissions.AllowAny']
-    },
+    'LOGIN_FIELD': 'email'
 }
