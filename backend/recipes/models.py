@@ -1,7 +1,9 @@
 from django.core.validators import MinValueValidator
 from django.db import models
-from users.models import User
 from django.db.models import UniqueConstraint
+from foodgram.settings import AUTH_USER_MODEL
+
+User = AUTH_USER_MODEL
 
 
 class Tag(models.Model):

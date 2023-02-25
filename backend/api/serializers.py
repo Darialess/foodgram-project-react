@@ -4,7 +4,7 @@ from recipes.models import (Favorite, Ingredient, IngredientRecipe, Recipe,
                             ShoppingCart, Tag, TagsRecipe)
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from users.serializers import UsersSerializer, UserSerializer
+from users.serializers import CustomUserSerializer
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -52,7 +52,7 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
     """Сериализатор для добавления рецепта."""
-    author = UsersSerializer(read_only=True)
+    author = CustomUserSerializer(read_only=True)
     image = Base64ImageField(
         max_length=None,
         use_url=True)
@@ -127,18 +127,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-
-        tags = validated_data.pop('tags')
-        ingredients = validated_data.pop('ingredients')
-
-        instance = super().update(instance, validated_data)
-        if tags:
-            instance.tags.clear()
-            instance.tags.set(tags)
-        if ingredients:
-            instance.ingredients.clear()
-            self.create_ingredients(ingredients, instance)
-        return instance
+        instance.tags.clear()
+        IngredientRecipe.objects.filter(recipe=instance).delete()
+        self.create_tags(validated_data.pop('tags'), instance)
+        self.create_ingredients(validated_data.pop('ingredients'), instance)
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         return RecipeReadSerializer(instance, context={
@@ -152,7 +145,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     tags = TagSerializer(
         many=True,
         read_only=True)
-    author =  UsersSerializer(read_only=True)
+    author =  CustomUserSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -171,7 +164,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time',
         ] 
-        
+
     def get_ingredients(self, obj):
         ingredients = IngredientRecipe.objects.filter(recipe=obj)
         return IngredientInRecipeSerializer(ingredients, many=True).data
