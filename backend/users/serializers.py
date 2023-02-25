@@ -1,89 +1,180 @@
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
+from api.serializers import ShopingCardSerializer
 from recipes.models import Recipe
-from .models import User
+from users.models import Follow, User
 
 
-class CustomUserCreateSerializer(UserCreateSerializer):
-    """
-    Сериализатор для регистрации пользователя.
-    """
-    class Meta:
-        model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'password'
-        )
-        extra_kwargs = {'password': {'write_only': True}}
+class UserSerializer(serializers.ModelSerializer):
 
-    def create(self, validated_data):
-        user = User.objects.create(
-            email=validated_data['email'],
-            username=validated_data['username'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name']
-        )
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
-
-
-class CustomUserSerializer(UserSerializer):
-    """
-    Сериализатор для пользователя.
-    get_is_subscribed показывает,
-    подписан ли текущий пользователь на просматриваемого.
-    """
-    is_subscribed = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed')
+    is_subscribed = serializers.SerializerMethodField()
+    password = serializers.CharField(
+        max_length=128,
+        min_length=8,
+        write_only=True
+    )
 
     def get_is_subscribed(self, obj):
-        user = self.context.get('request').user
-        if user.is_anonymous:
+        if not self.context.get('request') or (
+                self.context.get('request') is None):
             return False
-        return Follow.objects.filter(user=user, author=obj.id).exists()
+        request = self.context.get('request')
+        user = request.user
+        subcribe = user.follower.filter(author=obj)
+        return subcribe.exists()
 
-
-class ShortRecipeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
-
-
-class SubscribeSerializer(CustomUserSerializer):
-    """
-    Сериализатор для вывода подписок пользователя
-    """
-    recipes = serializers.SerializerMethodField(read_only=True)
-    recipes_count = serializers.SerializerMethodField(read_only=True)
+    def create(self, validated_data):
+        password = validated_data['password']
+        validated_data['password'] = make_password(password)
+        return super().create(validated_data)
 
     class Meta:
         model = User
-        fields = ('email', 'id', 'username', 'first_name', 'last_name',
-                  'is_subscribed', 'recipes', 'recipes_count')
+        fields = [
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'password',
+            'is_subscribed'
+        ]
 
-    @staticmethod
-    def get_recipes_count(obj):
-        return obj.recipes.count()
+
+class RegistrationSerializer(serializers.ModelSerializer):
+
+    password = serializers.CharField(
+        max_length=128,
+        min_length=8,
+        write_only=True
+    )
+    token = serializers.CharField(max_length=255, read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'password',
+            'token',
+            'is_subscribed'
+        ]
+
+    def validate(self, data):
+        if data['username'].lower() == 'me':
+            raise serializers.ValidationError(
+                'Имя пользователя не может быть me'
+            )
+        if User.objects.filter(username=data['username']).exists():
+            raise serializers.ValidationError(
+                'email не соответствует User'
+            )
+        return data
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
+
+
+class SetPasswordSerializer(serializers.ModelSerializer):
+    new_password = serializers.CharField(
+        required=True,
+        max_length=50,
+        min_length=8,
+        write_only=True
+    )
+    current_password = serializers.CharField(
+        required=True,
+        max_length=50,
+        min_length=4,
+        write_only=True
+    )
+
+    class Meta:
+        model = User
+        fields = ['new_password', 'current_password']
+
+    def validate(self, attrs):
+        if attrs['new_password'] == attrs['current_password']:
+            raise serializers.ValidationError(
+                'новый и старый пароли совпадают'
+            )
+        return super().validate(attrs)
+
+
+class UserSubscribtionsSerializer(serializers.ModelSerializer):
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes',
+            'recipes_count',
+        ]
 
     def get_recipes(self, obj):
+        recipes_limit = self.context['recipes_limit']
+        recipes = Recipe.objects.filter(author_id=obj.id)[:recipes_limit]
+        serializer = ShopingCardSerializer(recipes, many=True)
+        return serializer.data
+
+    def get_recipes_count(self, obj):
+        recipes = Recipe.objects.filter(author_id=obj.id)
+        return recipes.count()
+
+    def get_is_subscribed(self, obj):
+        return Follow.objects.filter(
+            user=self.context.get('user'),
+            author=obj
+        ).exists()
+
+    def update(self, instance, validated_data):
+        author = User.objects.get(username=self.context.get('author'))
+        instance.email = author.email
+        return instance
+
+
+class FollowSerializer(serializers.ModelSerializer):
+
+    result = UserSubscribtionsSerializer()
+
+    class Meta:
+        model = Follow
+        fields = '__all__'
+
+
+class UsersSerializer(serializers.ModelSerializer):
+
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+        ]
+
+    def get_is_subscribed(self, obj):
+
+        if not self.context.get('request') or (
+                self.context.get('request') is None):
+            return False
         request = self.context.get('request')
-        recipes = obj.recipes.all()
-        recipes_limit = request.query_params.get('recipes_limit')
-        if recipes_limit:
-            recipes = recipes[:int(recipes_limit)]
-        return ShortRecipeSerializer(recipes, many=True).data
+        user = request.user
+        subcribe = user.follower.filter(author=obj)
+        return subcribe.exists()
