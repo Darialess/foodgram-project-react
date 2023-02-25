@@ -13,7 +13,7 @@ from .permissions import IsOwnerOnly
 from django.contrib.auth.hashers import make_password
 
 
-class UsersVievSet(mixins.CreateModelMixin,
+class UsersViewSet(mixins.CreateModelMixin,
                    mixins.ListModelMixin,
                    viewsets.GenericViewSet):
     queryset = User.objects.all()
@@ -24,7 +24,7 @@ class UsersVievSet(mixins.CreateModelMixin,
         return UserSerializer
 
 
-class UserVievSet(
+class UserViewSet(
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet
 ):
