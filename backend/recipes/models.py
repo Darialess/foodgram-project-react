@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 
-from foodgram.settings import AUTH_USER_MODEL, TAG_CHOICES
+from foodgram.settings import AUTH_USER_MODEL
 
 User = AUTH_USER_MODEL
 
@@ -46,7 +46,6 @@ class Tags(models.Model):
         max_length=64,
         unique=True,
         blank=False,
-        choices=TAG_CHOICES,
         verbose_name='Название',
         help_text='Название тега'
     )
