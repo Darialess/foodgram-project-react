@@ -36,7 +36,8 @@ INSTALLED_APPS = [
     'recipes',
     'api',
     'rest_framework.authtoken',
-    'djoser'
+    'djoser',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -136,7 +137,7 @@ REST_FRAMEWORK = {
 }
 
 DEFAULT_RECIPE_LIMIT = 3
-
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DJOSER = {
     "LOGIN_FIELD": 'email',

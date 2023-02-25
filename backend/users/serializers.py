@@ -28,9 +28,15 @@ class UserSerializer(serializers.ModelSerializer):
         return subcribe.exists()
 
     def create(self, validated_data):
-        password = validated_data['password']
-        validated_data['password'] = make_password(password)
-        return super().create(validated_data)
+        user = User.objects.create(
+            email=validated_data['email'],
+            username=validated_data['username'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name']
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
 
     class Meta:
         model = User
@@ -76,76 +82,6 @@ class ShortRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
-class SubscribeListSerializer(serializers.ModelSerializer):
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
-    is_subscribed = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes',
-            'recipes_count'
-        )
-
-    def get_recipes_count(self, obj):
-        return obj.recipes_author.count()
-
-    def get_recipes(self, obj):
-        request = self.context.get('request')
-        recipes_limit = request.query_params.get('recipes_limit')
-        if not recipes_limit:
-            return ShortRecipeSerializer(
-                Recipe.objects.filter(author=obj),
-                many=True,
-                context={'request': request}
-            ).data
-        return ShortRecipeSerializer(
-            Recipe.objects.filter(author=obj)[:int(recipes_limit)],
-            many=True,
-            context={'request': request}
-        ).data
-
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        user = request.user
-        if not request or user.is_anonymous:
-            return False
-        subcribe = user.follower.filter(author=obj)
-        return subcribe.exists()
-
-
-class SubscribeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Subscribe
-        fields = ('author', 'user')
-
-    def to_representation(self, instance):
-        request = self.context.get('request')
-        return SubscribeListSerializer(
-            instance.author,
-            context={'request': request}
-        ).data
-
-    def validate(self, data):
-        request = self.context.get('request')
-        user = request.user
-        author = data.get('author')
-        if Subscribe.objects.filter(user=user, author=author):
-            raise serializers.ValidationError('Вы уже подписаны')
-        if user == author:
-            raise serializers.ValidationError(
-                'Вы не можете подписаться на себя'
-            )
-        return data
-
-
 class SetPasswordSerializer(serializers.ModelSerializer):
     """ Сериализатор эндпойнта SetPassword. """
     new_password = serializers.CharField(
@@ -174,6 +110,7 @@ class SetPasswordSerializer(serializers.ModelSerializer):
 
 
 class UserSubscribtionsSerializer(serializers.ModelSerializer):
+    """ Сериализатор эндпойнта UserSubscribtions. """
 
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
@@ -203,7 +140,7 @@ class UserSubscribtionsSerializer(serializers.ModelSerializer):
         return recipes.count()
 
     def get_is_subscribed(self, obj):
-        return Follow.objects.filter(
+        return Subscribe.objects.filter(
             user=self.context.get('user'),
             author=obj
         ).exists()
@@ -214,9 +151,7 @@ class UserSubscribtionsSerializer(serializers.ModelSerializer):
         return instance
 
 
-class FollowSerializer(serializers.ModelSerializer):
-    """ Сериализатор модели Follow. """
-
+class SubscribeSerializer(serializers.ModelSerializer):
     result = UserSubscribtionsSerializer()
 
     class Meta:
