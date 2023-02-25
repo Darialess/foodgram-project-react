@@ -15,7 +15,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from .pagination import LimitPageNumberPagination
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
                           RecipeWriteSerializer, TagSerializer, 
-                          FavoriteSerializer, ShoppingCartSerializer)
+                          ShoppingCartSerializer)
 from users.serializers import ShortRecipeSerializer
 from rest_framework.status import (
     HTTP_200_OK,
