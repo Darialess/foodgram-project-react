@@ -1,120 +1,111 @@
 from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager,
-                                        PermissionsMixin)
+                                        PermissionsMixin, UserManager)
 from django.db import models
 
 
-class UserManager(BaseUserManager):
-    """ Manager для создания User. """
+class CustomUserManager(BaseUserManager):
+    def create_superuser(
+            self, email, username, first_name, last_name,
+            password, **other_fields
+    ):
 
-    def create_user(self, username, email, password=None, **extra_fields):
-        """ Создает и возвращает пользователя с имэйлом, паролем и именем. """
-        if username is None:
-            raise TypeError('Пользователи должны иметь имя пользователя.')
+        other_fields.setdefault('is_staff', True)
+        other_fields.setdefault('is_superuser', True)
+        other_fields.setdefault('is_active', True)
 
-        if email is None:
-            raise TypeError('пользователи должны иметь email.')
-        user = self.model(
-            username=username,
-            email=self.normalize_email(email),
-            **extra_fields
+        if not other_fields.get("is_staff"):
+            raise ValueError("Отказано в доступе")
+
+        if not other_fields.get("is_superuser"):
+            raise ValueError("Отказано в доступе")
+
+        return self.create_user(
+            email, username, first_name, last_name,
+            password=password, **other_fields
         )
+
+    def create_user(self, first_name, last_name,
+                    email, password, **other_fields):
+
+        if not email:
+            raise ValueError("Укажите email!")
+
+        email = self.normalize_email(email)
+        user = self.model(
+            email=email, first_name=first_name,
+            last_name=last_name, **other_fields
+        )
+
         user.set_password(password)
         user.save()
 
         return user
 
 
-
 class User(AbstractBaseUser, PermissionsMixin):
-    """ Модель пользователя"""
-
     username = models.CharField(
-        db_index=True,
+        'Имя пользователя',
         max_length=150,
         unique=True,
-        verbose_name='Има пользователя ',
-        help_text='Логин пользователя'
     )
     email = models.EmailField(
-        db_index=True,
+        'Электронная почта',
         max_length=254,
         unique=True,
-        verbose_name='Email',
-        help_text='email пользователя'
     )
     first_name = models.CharField(
+        'Имя',
         max_length=150,
-        blank=False,
-        default=' ',
-        verbose_name='Имя',
-        help_text='Имя пользователя'
     )
     last_name = models.CharField(
+        'Фамилия',
         max_length=150,
-        blank=False,
-        default=' ',
-        verbose_name='Фамилия',
-        help_text='Фамилия пользователя'
     )
     is_active = models.BooleanField(default=True)
-
     is_staff = models.BooleanField(default=False)
-
-    is_subscribed = models.BooleanField(default=False)
-
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Дата создания'
-    )
-
-    updated_at = models.DateTimeField(auto_now=True)
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    is_admin = models.BooleanField(default=False)
 
     objects = UserManager()
 
-    class Meta:
-        verbose_name = 'Пользователь'
-        verbose_name_plural = 'Пользователи'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['username', 'email'],
-                name='unique_username_email'
-            )
-        ]
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+
+    def has_perm(self, perm, obj=None):
+        return self.is_superuser
+
+    def has_module_perms(self, app_label):
+        return self.is_superuser
+
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    def get_short_name(self):
+        return self.username
 
     def __str__(self):
-        return self.username
+        return self.email
 
 
 class Follow(models.Model):
-    """ Модель подписки на авторов"""
-
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='follower',
-        verbose_name="Подписчик",
-        help_text='тот кто подписывается ',
+        verbose_name='Подписчик',
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='following',
-        verbose_name="Автор рецепта",
-        help_text='тот на кого подписываются',
+        verbose_name='Автор',
     )
 
     class Meta:
-        verbose_name = 'Подписчик'
-        verbose_name_plural = 'Подписчики'
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
         constraints = [
             models.UniqueConstraint(
-                fields=['author', 'user'],
-                name='unique_author_user'
+                fields=['user', 'author'],
+                name='unique follow',
             )
         ]
-
-    def __str__(self):
-        return "Подписка на автора"

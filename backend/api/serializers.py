@@ -219,4 +219,4 @@ class ShoppingCartSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         context = {'request': request}
         return ShortRecipeSerializer(
-            instance.recipe, context=context).
+            instance.recipe, context=context).data
