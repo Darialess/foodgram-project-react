@@ -1,15 +1,13 @@
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
-
 from recipes.models import (Favorite, Ingredient, IngredientAmount, Recipe,
-                            ShoppingCart, Tag)
+                            ShoppingCart, Tag, TagsRecipe)
 from users.serializers import CustomUserSerializer
+from django.shortcuts import get_object_or_404
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для тегов
-    """
+    """Сериализатор для тегов."""
     class Meta:
         model = Tag
         fields = '__all__'
@@ -17,9 +15,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class IngredientSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для ингредиентов
-    """
+    """Сериализатор для ингредиентов."""
     class Meta:
         model = Ingredient
         fields = '__all__'
@@ -87,7 +83,7 @@ class AddIngredientSerializer(serializers.ModelSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для добавления рецептов
+    Сериализатор для создания нового рецепта
     """
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True)
@@ -137,18 +133,26 @@ class RecipeSerializer(serializers.ModelSerializer):
             })
         return data
 
-    @staticmethod
-    def create_ingredients(ingredients, recipe):
-        for ingredient in ingredients:
-            IngredientAmount.objects.create(
-                recipe=recipe, ingredient=ingredient['id'],
-                amount=ingredient['amount']
+    def create_ingredients(self, ingredients, recipe):
+        bulk_ingredient_list = [
+            IngredientAmount(
+                recipe=recipe,
+                ingredient=get_object_or_404(
+                    Ingredient, pk=ingredient_data['id']),
+                amount=ingredient_data['amount']
             )
+            for ingredient_data in ingredients
+        ]
+        IngredientAmount.objects.bulk_create(bulk_ingredient_list)
 
-    @staticmethod
-    def create_tags(tags, recipe):
-        for tag in tags:
-            recipe.tags.add(tag)
+    def create_tags(self, tags, recipe):
+        bulk_tags_list = [
+            TagsRecipe(recipe=recipe,
+                       tags=get_object_or_404(Tag, name=tag_data)
+                       )
+            for tag_data in tags
+        ]
+        TagsRecipe.objects.bulk_create(bulk_tags_list)
 
     def create(self, validated_data):
         author = self.context.get('request').user

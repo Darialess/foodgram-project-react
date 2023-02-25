@@ -174,3 +174,21 @@ class ShoppingCart(models.Model):
             models.UniqueConstraint(fields=['user', 'recipe'],
                                     name='unique shopping cart')
         ]
+
+class TagsRecipe(models.Model):
+    """ Тег рецепта."""
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+    )
+    tags = models.ForeignKey(
+        Tag,
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        verbose_name = 'Тег рецепта'
+        verbose_name_plural = 'Теги рецепта'
+
+    def __str__(self):
+        return f'{self.tags}'
