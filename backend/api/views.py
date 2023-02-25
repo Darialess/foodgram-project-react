@@ -42,9 +42,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
-    def perform_create(self, serializer):
+    def perform_update(self, serializer):
         serializer.save(author=self.request.user)
-
+        
     def add_recipe_to_fav_or_shopcart(self, request, pk, model):
         user = request.user
         recipe = get_object_or_404(Recipe, pk=pk)
