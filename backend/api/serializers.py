@@ -111,60 +111,53 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         ingredients = data['ingredients']
-        ingredients_list = []
+        ingredient_list = []
+
         for ingredient in ingredients:
-            ingredient_id = ingredient['id']
-            if ingredient_id in ingredients_list:
-                raise serializers.ValidationError({
-                    'ingredients': 'Ингредиенты должны быть уникальными!'
-                })
-            ingredients_list.append(ingredient_id)
+            ingredient = get_object_or_404(
+                Ingredient, id=ingredient['id'])
+            if ingredient in ingredient_list:
+                raise serializers.ValidationError(
+                    'Ингредиент не может повторятся')
+            ingredient_list.append(ingredient)
+
+        for ingredient in ingredients:
             amount = ingredient['amount']
-            if int(amount) <= 0:
-                raise serializers.ValidationError({
-                    'amount': 'Количество ингредиента должно быть больше нуля!'
-                })
-
-        tags = data['tags']
-        if not tags:
-            raise serializers.ValidationError({
-                'tags': 'Нужно выбрать хотя бы один тэг!'
-            })
-        tags_list = []
-        for tag in tags:
-            if tag in tags_list:
-                raise serializers.ValidationError({
-                    'tags': 'Тэги должны быть уникальными!'
-                })
-            tags_list.append(tag)
-
-        cooking_time = data['cooking_time']
-        if int(cooking_time) <= 0:
-            raise serializers.ValidationError({
-                'cooking_time': 'Время приготовления должно быть больше 0!'
-            })
+            if int(amount) < 1:
+                raise serializers.ValidationError(
+                    {'amount': 'Количество ингредиента не может быть равным 0'}
+                )
+        data['ingredients'] = ingredients
         return data
 
-    @staticmethod
-    def create_ingredients(ingredients, recipe):
-        for ingredient in ingredients:
-            IngredientAmount.objects.create(
-                recipe=recipe, ingredient=ingredient['id'],
-                amount=ingredient['amount']
+    def create_ingredients(self, ingredients, recipe):
+        bulk_ingredient_list = [
+            IngredientAmount(
+                recipe=recipe,
+                ingredient=get_object_or_404(
+                    Ingredient, pk=ingredient_data['id']),
+                amount=ingredient_data['amount']
             )
+            for ingredient_data in ingredients
+        ]
+        IngredientAmount.objects.bulk_create(bulk_ingredient_list)
 
-    @staticmethod
-    def create_tags(tags, recipe):
-        for tag in tags:
-            recipe.tags.add(tag)
+    def create_tags(self, tags, recipe):
+        bulk_tags_list = [
+            TagsRecipe(recipe=recipe,
+                       tags=get_object_or_404(Tag, name=tag_data)
+                       )
+            for tag_data in tags
+        ]
+        TagsRecipe.objects.bulk_create(bulk_tags_list)
 
     def create(self, validated_data):
-        author = self.context.get('request').user
-        tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        recipe = Recipe.objects.create(author=author, **validated_data)
-        self.create_tags(tags, recipe)
+        tags = validated_data.pop('tags')
+        validated_data['author'] = self.context.get('request').user
+        recipe = super().create(validated_data)
         self.create_ingredients(ingredients, recipe)
+        self.create_tags(tags, recipe)
         return recipe
 
     def to_representation(self, instance): 

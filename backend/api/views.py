@@ -64,55 +64,43 @@ class RecipeViewSet(ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user) 
 
-    def add_recipe_to_fav_or_shopcart(self, request, pk, model):
-        """Вспомогательная функция для добавления рецепта в
-        shopping_cart или favorite."""
+    @staticmethod
+    def post_method_for_actions(request, pk, serializers):
+        data = {'user': request.user.id, 'recipe': pk}
+        serializer = serializers(data=data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def delete_method_for_actions(request, pk, model):
         user = request.user
-        recipe = get_object_or_404(Recipe, pk=pk)
-        object = model.objects.filter(
-            user=user,
-            recipe=recipe
-        )
-        if request.method == 'POST':
-            model.objects.get_or_create(
-                user=user,
-                recipe=recipe
-            )
-            serializer = ShoppingCartSerializer(recipe)
-            serializer.validate(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        recipe = get_object_or_404(Recipe, id=pk)
+        model_obj = get_object_or_404(model, user=user, recipe=recipe)
+        model_obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-        if request.method == 'DELETE':
-            object.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+    @action(detail=True, methods=["POST"],
+            permission_classes=[IsAuthenticated])
+    def favorite(self, request, pk):
+        return self.post_method_for_actions(
+            request=request, pk=pk, serializers=FavoriteSerializer)
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk):
+        return self.delete_method_for_actions(
+            request=request, pk=pk, model=Favorite)
 
-    @action(
-        detail=True,
-        methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated],
-        name='shopping_cart'
-    )
-    def shopping_cart(self, request, pk=None):
-        """ Обработка запросов на добавление в корзину """
+    @action(detail=True, methods=["POST"],
+            permission_classes=[IsAuthenticated])
+    def shopping_cart(self, request, pk):
+        return self.post_method_for_actions(
+            request=request, pk=pk, serializers=ShoppingCartSerializer)
 
-        return self.add_recipe_to_fav_or_shopcart(request, pk, ShoppingCart)
-
-    @action(
-        detail=True,
-        methods=['post', 'delete'],
-        permission_classes=[IsAuthenticated],
-        name='favorite'
-    )
-    def favorite(self, request, pk=None):
-        """ Представление запросов по url .../favorite/"""
-
-        return self.add_recipe_to_fav_or_shopcart(request, pk, Favorite)
-
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, pk):
+        return self.delete_method_for_actions(
+            request=request, pk=pk, model=ShoppingCart)
 
     @action(detail=False, permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
