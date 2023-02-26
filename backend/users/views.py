@@ -6,7 +6,7 @@ from rest_framework.permissions import (IsAuthenticated,
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.pagination import CustomPageNumberPagination
+from api.pagination import CustomPagination
 from .models import Follow, User
 from .serializers import CustomUserSerializer, FollowSerializer
 
@@ -26,7 +26,7 @@ class FollowViewSet(APIView):
     """
     serializer_class = FollowSerializer
     permission_classes = [IsAuthenticated]
-    pagination_class = CustomPageNumberPagination
+    pagination_class = CustomPagination
 
     def post(self, request, *args, **kwargs):
         user_id = self.kwargs.get('user_id')
@@ -75,7 +75,7 @@ class FollowListView(ListAPIView):
     """
     serializer_class = FollowSerializer
     permission_classes = [IsAuthenticated]
-    pagination_class = CustomPageNumberPagination
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         return User.objects.filter(following__user=self.request.user)
