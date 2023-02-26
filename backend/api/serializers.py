@@ -89,7 +89,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(), many=True)
     ingredients = AddIngredientSerializer(many=True)
     author = CustomUserSerializer(read_only=True)
-    image = Base64ImageField()
+    image = Base64ImageField(
+        max_length=None,
+        use_url=True)
 
     class Meta:
         model = Recipe

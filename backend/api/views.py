@@ -99,21 +99,27 @@ class RecipeViewSet(ModelViewSet):
         return self.delete_method_for_actions(
             request=request, pk=pk, model=ShoppingCart)
 
-    @action(detail=False, methods=['get'],
-            permission_classes=[IsAuthenticated])
+    @action(detail=False, permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
-        ingredients = IngredientAmount.objects.filter(
-            recipe__shopping_cart__user=request.user
+        shopping_cart = ShoppingCart.objects.filter(user=self.request.user)
+        recipes = [item.recipe.id for item in shopping_cart]
+        buy_list = IngredientAmount.objects.filter(
+            recipe__in=recipes
         ).values(
-            'ingredient__name',
-            'ingredient__measurement_unit'
-        ).annotate(total_amount=Sum('amount'))
-        shopping_list = ['{} ({}) - {}\n'.format(
-            ingredient['ingredient__name'],
-            ingredient['ingredient__measurement_unit'],
-            ingredient['total_amount']
-        ) for ingredient in ingredients]
-        response = HttpResponse(shopping_list, content_type='text/plain')
-        attachment = 'attachment; filename="shopping_list.txt"'
-        response['Content-Disposition'] = attachment
+            'ingredient'
+        ).annotate(
+            amount=Sum('amount')
+        )
+        buy_list_text = 'Список покупок с сайта Foodgram:\n\n'
+        for item in buy_list:
+            ingredient = Ingredient.objects.get(pk=item['ingredient'])
+            amount = item['amount']
+            buy_list_text += (
+                f'{ingredient.name}, {amount} '
+                f'{ingredient.measurement_unit}\n'
+            )
+        response = HttpResponse(buy_list_text, content_type="text/plain")
+        response['Content-Disposition'] = (
+            'attachment; filename=shopping-list.txt'
+        )
         return response
