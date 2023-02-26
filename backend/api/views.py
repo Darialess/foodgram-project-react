@@ -58,8 +58,8 @@ class RecipeViewSet(ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ['create', 'partial_update']:
-            return RecipeListSerializer
-        return RecipeSerializer
+            return RecipeSerializer
+        return RecipeListSerializer
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user) 
@@ -101,6 +101,8 @@ class RecipeViewSet(ModelViewSet):
     def delete_shopping_cart(self, request, pk):
         return self.delete_method_for_actions(
             request=request, pk=pk, model=ShoppingCart)
+
+
 
     @action(detail=False, permission_classes=[IsAuthenticated])
     def download_shopping_cart(self, request):
