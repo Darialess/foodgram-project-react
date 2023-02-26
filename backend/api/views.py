@@ -61,6 +61,9 @@ class RecipeViewSet(ModelViewSet):
             return RecipeListSerializer
         return RecipeSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user) 
+
     @staticmethod
     def post_method_for_actions(request, pk, serializers):
         data = {'user': request.user.id, 'recipe': pk}
