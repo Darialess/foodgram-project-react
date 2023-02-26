@@ -41,6 +41,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
     """
     Сериализатор для отображения рецептов
     """
+    image = Base64ImageField()
     tags = TagSerializer(many=True, read_only=True)
     author = CustomUserSerializer(read_only=True)
     ingredients = serializers.SerializerMethodField(read_only=True)
@@ -85,9 +86,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     """
     Сериализатор для создания нового рецепта
     """
-    image = Base64ImageField( 
-        max_length=None, 
-        use_url=True) 
+    image = Base64ImageField() 
     tags = serializers.PrimaryKeyRelatedField( 
         many=True, 
         queryset=Tag.objects.all()) 
