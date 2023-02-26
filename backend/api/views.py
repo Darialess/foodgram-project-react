@@ -7,7 +7,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
@@ -57,7 +57,7 @@ class RecipeViewSet(ModelViewSet):
     pagination_class = CustomPagination
 
     def get_serializer_class(self):
-        if self.request.method == 'GET':
+        if self.request.method in SAFE_METHODS:
             return RecipeListSerializer
         return RecipeSerializer
 
