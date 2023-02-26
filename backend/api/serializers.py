@@ -95,11 +95,18 @@ class RecipeSerializer(serializers.ModelSerializer):
     ingredients = AddIngredientSerializer( 
         many=True) 
 
-    class Meta: 
-        model = Recipe 
-        fields = '__all__' 
-        read_only_fields = ('author',) 
-
+    class Meta:
+        model = Recipe
+        fields = (
+            'id',
+            'tags',
+            'author',
+            'ingredients',
+            'name',
+            'image',
+            'text',
+            'cooking_time',
+        )
 
     def validate(self, data):
         ingredients = data['ingredients']
