@@ -100,51 +100,64 @@ class RecipeSerializer(serializers.ModelSerializer):
         fields = '__all__' 
         read_only_fields = ('author',) 
 
-    def validate_ingredients(self, value): 
-        ingredients = value 
-        if not ingredients: 
-            raise ValidationError({ 
-                'ingredients': 'Нужен хотя бы один ингредиент!' 
-            }) 
-        ingredients_list = [] 
-        for item in ingredients: 
-            ingredient = get_object_or_404(Ingredient, id=item['id']) 
-            if ingredient in ingredients_list: 
-                raise ValidationError({ 
-                    'ingredients': 'Ингридиенты не могут повторяться!' 
-                }) 
-            ingredients_list.append(ingredient) 
-        return value 
 
-    def validate_tags(self, value): 
-        tags = value 
-        if not tags: 
-            raise ValidationError({ 
-                'tags': 'Нужно выбрать хотя бы один тег!' 
-            }) 
-        tags_list = [] 
-        for tag in tags: 
-            if tag in tags_list: 
-                raise ValidationError({ 
-                    'tags': 'Теги должны быть уникальными!' 
-                }) 
-            tags_list.append(tag) 
-        return value 
+    def validate(self, data):
+        ingredients = data['ingredients']
+        ingredients_list = []
+        for ingredient in ingredients:
+            ingredient_id = ingredient['id']
+            if ingredient_id in ingredients_list:
+                raise serializers.ValidationError({
+                    'ingredients': 'Ингредиенты должны быть уникальными!'
+                })
+            ingredients_list.append(ingredient_id)
+            amount = ingredient['amount']
+            if int(amount) <= 0:
+                raise serializers.ValidationError({
+                    'amount': 'Количество ингредиента должно быть больше нуля!'
+                })
 
-    def create_ingredients(self, ingredients, recipe): 
-        for ingredient in ingredients: 
-            Ingredient.objects.create( 
-                recipe=recipe, 
-                ingredient_id=ingredient.get('id'), 
-                amount=ingredient.get('amount'), ) 
+        tags = data['tags']
+        if not tags:
+            raise serializers.ValidationError({
+                'tags': 'Нужно выбрать хотя бы один тэг!'
+            })
+        tags_list = []
+        for tag in tags:
+            if tag in tags_list:
+                raise serializers.ValidationError({
+                    'tags': 'Тэги должны быть уникальными!'
+                })
+            tags_list.append(tag)
 
-    def create(self, validated_data): 
-        ingredients = validated_data.pop('ingredients') 
-        tags = validated_data.pop('tags') 
-        recipe = Recipe.objects.create(**validated_data) 
-        recipe.tags.set(tags) 
-        self.create_ingredients(ingredients, recipe) 
-        return recipe 
+        cooking_time = data['cooking_time']
+        if int(cooking_time) <= 0:
+            raise serializers.ValidationError({
+                'cooking_time': 'Время приготовления должно быть больше 0!'
+            })
+        return data
+
+    @staticmethod
+    def create_ingredients(ingredients, recipe):
+        for ingredient in ingredients:
+            IngredientAmount.objects.create(
+                recipe=recipe, ingredient=ingredient['id'],
+                amount=ingredient['amount']
+            )
+
+    @staticmethod
+    def create_tags(tags, recipe):
+        for tag in tags:
+            recipe.tags.add(tag)
+
+    def create(self, validated_data):
+        author = self.context.get('request').user
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        recipe = Recipe.objects.create(author=author, **validated_data)
+        self.create_tags(tags, recipe)
+        self.create_ingredients(ingredients, recipe)
+        return recipe
 
     def to_representation(self, instance): 
         return RecipeListSerializer( 
