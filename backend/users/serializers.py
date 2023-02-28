@@ -39,9 +39,6 @@ class CustomUserSerializer(UserSerializer):
     get_is_subscribed показывает,
     подписан ли текущий пользователь на просматриваемого.
     """
-    email = serializers.EmailField
-    username = serializers.CharField
-    password = serializers.CharField(write_only=True)
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
