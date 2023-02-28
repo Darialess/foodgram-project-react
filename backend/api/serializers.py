@@ -1,11 +1,10 @@
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework import serializers, exceptions
+from rest_framework import serializers
 from recipes.models import (Favorite, Ingredient, IngredientAmount, Recipe,
-                            ShoppingCart, Tag, TagsRecipe)
+                            ShoppingCart, Tag)
 from users.serializers import CustomUserSerializer
 from django.shortcuts import get_object_or_404
-from rest_framework.exceptions import ValidationError 
-from django.db import transaction
+
 
 class TagSerializer(serializers.ModelSerializer):
     """Сериализатор для тегов."""
@@ -99,12 +98,12 @@ class RecipeSerializer(serializers.ModelSerializer):
     Сериализатор для создания нового рецепта
     """
     author = CustomUserSerializer(read_only=True)
-    image = Base64ImageField() 
-    tags = serializers.PrimaryKeyRelatedField( 
-        many=True, 
-        queryset=Tag.objects.all()) 
-    ingredients = AddIngredientSerializer( 
-        many=True) 
+    image = Base64ImageField()
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Tag.objects.all())
+    ingredients = AddIngredientSerializer(
+        many=True)
 
     class Meta:
         model = Recipe

@@ -2,9 +2,6 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
@@ -62,7 +59,7 @@ class RecipeViewSet(ModelViewSet):
         return RecipeSerializer
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user) 
+        serializer.save(author=self.request.user)
 
     @staticmethod
     def post_method_for_actions(request, pk, serializers):

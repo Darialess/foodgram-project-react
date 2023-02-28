@@ -3,8 +3,10 @@ from django.contrib.admin import display
 from .models import (Favorite, Ingredient, Recipe,
                      ShoppingCart, Tag, IngredientAmount)
 
+
 class IngredientInline(admin.TabularInline):
     model = IngredientAmount
+
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
@@ -29,11 +31,9 @@ class RecipeAdmin(admin.ModelAdmin):
         IngredientInline,
     ]
 
-
     @display(description='Количество в избранных')
     def added_in_favorites(self, obj):
         return obj.favorites.count()
-
 
 
 @admin.register(Favorite)

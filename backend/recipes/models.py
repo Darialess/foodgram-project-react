@@ -175,6 +175,7 @@ class ShoppingCart(models.Model):
                                     name='unique shopping cart')
         ]
 
+
 class TagsRecipe(models.Model):
     """ Тег рецепта."""
     recipe = models.ForeignKey(

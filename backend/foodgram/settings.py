@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'k1h0$e8q%s4ha54hiz#!zkr33&amt&m1hhb(l(8fk@ki16awl)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -87,7 +87,6 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', default=5432)
     }
 }
-
 
 
 # Password validation
