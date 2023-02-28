@@ -1,5 +1,4 @@
 from api.pagination import CustomPagination
-from django.contrib.auth import get_user_model
 from djoser.views import UserViewSet
 from rest_framework import status
 from rest_framework.generics import ListAPIView, get_object_or_404
@@ -8,21 +7,17 @@ from rest_framework.permissions import (IsAuthenticated,
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Follow
+from .models import Follow, User
 from .serializers import CustomUserSerializer, FollowSerializer
-
-User = get_user_model()
 
 
 class CustomUserViewSet(UserViewSet):
     """
     ViewSet для работы с пользователями.
     """
+    queryset = User.objects.all()
     serializer_class = CustomUserSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get_queryset(self):
-        return User.objects.all()
 
 
 class FollowViewSet(APIView):
