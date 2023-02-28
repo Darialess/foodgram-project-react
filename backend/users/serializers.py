@@ -1,8 +1,10 @@
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
-
+from django.contrib.auth import get_user_model
 from recipes.models import Recipe
-from .models import Follow, User
+from .models import Follow
+
+User = get_user_model()
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -39,6 +41,7 @@ class CustomUserSerializer(UserSerializer):
     get_is_subscribed показывает,
     подписан ли текущий пользователь на просматриваемого.
     """
+
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
