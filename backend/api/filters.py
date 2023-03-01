@@ -12,8 +12,7 @@ class IngredientSearchFilter(SearchFilter):
 
 class RecipeFilter(FilterSet):
     """
-    Фильтры для сортировки рецептов по:
-    тегам, нахождению в избранном и корзине.
+    Фильтры по тегам, избранному и корзине покупок.
     """
     tags = ModelMultipleChoiceFilter(field_name='tags__slug',
                                      to_field_name='slug',

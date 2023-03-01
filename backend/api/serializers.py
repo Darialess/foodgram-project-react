@@ -30,9 +30,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class IngredientAmountSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для вывода количества ингредиентов
-    """
+    """Сериализатор для количества ингредиентов"""
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
@@ -45,9 +43,7 @@ class IngredientAmountSerializer(serializers.ModelSerializer):
 
 
 class RecipeListSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для отображения рецептов
-    """
+    """Сериализатор для отображения рецептов"""
     image = Base64ImageField()
     tags = TagSerializer(many=True, read_only=True)
     author = CustomUserSerializer(read_only=True)
@@ -82,9 +78,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
 
 
 class AddIngredientSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для добавления Ингредиентов
-    """
+    """Сериализатор для добавления ингредиентов"""
     id = serializers.IntegerField()
     amount = serializers.IntegerField()
 
@@ -94,9 +88,7 @@ class AddIngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для создания нового рецепта
-    """
+    """Сериализатор для создания нового рецепта"""
     author = CustomUserSerializer(read_only=True)
     image = Base64ImageField()
     tags = serializers.PrimaryKeyRelatedField(
@@ -175,18 +167,14 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для краткого отображения сведений о рецепте
-    """
+    """Сериализатор для краткого рецепта."""
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для списка избранного
-    """
+    """Сериализатор для избранного"""
     class Meta:
         model = Favorite
         fields = ('user', 'recipe')

@@ -19,10 +19,7 @@ from .serializers import (FavoriteSerializer, IngredientSerializer,
 
 
 class TagsViewSet(ReadOnlyModelViewSet):
-    """
-    ViewSet для работы с тегами.
-    Добавить тег может администратор.
-    """
+    """ViewSet для тегов."""
     queryset = Tag.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = TagSerializer
@@ -30,10 +27,7 @@ class TagsViewSet(ReadOnlyModelViewSet):
 
 
 class IngredientsViewSet(ReadOnlyModelViewSet):
-    """
-    ViewSet для работы с ингредиентами.
-    Добавить ингредиент может администратор.
-    """
+    """ViewSet для ингредиентов."""
     queryset = Ingredient.objects.all()
     permission_classes = (AllowAny, )
     serializer_class = IngredientSerializer
@@ -43,10 +37,7 @@ class IngredientsViewSet(ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(ModelViewSet):
-    """
-    ViewSet для работы с рецептами.
-    Для анонимов разрешен только просмотр рецептов.
-    """
+    """ViewSet для работы с рецептами."""
     queryset = Recipe.objects.all()
     permission_classes = [IsAuthorOrReadOnly]
     filter_backends = [DjangoFilterBackend]
