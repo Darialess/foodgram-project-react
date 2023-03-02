@@ -27,7 +27,7 @@ class IngredientAdmin(admin.ModelAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ('name', 'id', 'author', 'added_in_favorites')
     readonly_fields = ('added_in_favorites',)
-    search_fields = ('name', 'author', 'tags')
+    search_fields = ('name', 'author', 'tags',)
     list_filter = ('author', 'name', 'tags',)
     inlines = [
         IngredientInline,
